@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -28,6 +30,9 @@ public class ScheduleEntity {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;  // 수정일
+
+    @OneToMany(mappedBy = "schedule", fetch = FetchType.LAZY)
+    private List<CommentEntity> comments = new ArrayList<>();  // 빈 리스트로 초기화
 
     @PrePersist
     public void onPrePersist() {

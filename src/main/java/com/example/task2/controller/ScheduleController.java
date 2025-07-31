@@ -4,6 +4,7 @@ import com.example.task2.dto.ScheduleRequestDto;
 import com.example.task2.dto.ScheduleResponseDto;
 import com.example.task2.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -55,5 +56,19 @@ public class ScheduleController {
     public ResponseEntity<ScheduleResponseDto> updateSchedule(@PathVariable Long id, @RequestBody ScheduleRequestDto request) {
         ScheduleResponseDto updatedSchedule = scheduleService.updateSchedule(id, request);
         return ResponseEntity.ok(updatedSchedule);
+    }
+
+    /**
+     * 페이지네이션을 사용하여 일정 목록을 조회
+     * @param pageNo 페이지 번호
+     * @param pageSize 페이지 크기
+     * @return 페이지네이션된 일정 목록
+     */
+    @GetMapping
+    public Page<ScheduleResponseDto> getSchedules(
+            @RequestParam(value = "pageNo", defaultValue = "0") int pageNo,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
+
+        return scheduleService.getSchedules(pageNo, pageSize);
     }
 }

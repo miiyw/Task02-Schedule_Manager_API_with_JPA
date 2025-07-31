@@ -5,9 +5,12 @@ import com.example.task2.dto.ScheduleResponseDto;
 import com.example.task2.entity.ScheduleEntity;
 import com.example.task2.repository.ScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service                            // Spring이 이 클래스를 서비스 계층의 Bean으로 등록
 public class ScheduleService {
@@ -75,4 +78,35 @@ public class ScheduleService {
         // 응답 DTO로 변환하여 반환
         return ScheduleResponseDto.fromEntity(scheduleEntity);
     }
+
+    /**
+     * 페이지네이션을 이용한 일정 조회
+     * @param pageNo 페이지 번호
+     * @param pageSize 페이지 크기
+     * @return 페이지네이션된 일정 목록
+     */
+    public Page<ScheduleResponseDto> getSchedules(int pageNo, int pageSize) {
+        // Pageable 객체 생성, 기본 페이지 크기는 10
+        Pageable pageable = PageRequest.of(pageNo, pageSize > 0 ? pageSize : 10, Sort.by(Sort.Order.desc("updatedAt")));
+
+        // 일정 목록을 페이지네이션 및 수정일 내림차순으로 조회
+        Page<ScheduleEntity> page = scheduleRepository.findAll(pageable);
+
+        // ScheduleEntity를 ScheduleResponseDto로 변환
+        List<ScheduleResponseDto> schedules = page.getContent().stream()
+                .map(schedule -> new ScheduleResponseDto(
+                        schedule.getId(),
+                        schedule.getTitle(),
+                        schedule.getContent(),
+                        schedule.getUserName(),
+                        schedule.getCreatedAt(),
+                        schedule.getUpdatedAt(),
+                        schedule.getComments().size()  // 댓글 개수
+                ))
+                .collect(Collectors.toList());
+
+        // 반환할 Page 객체를 사용해 페이지네이션된 데이터 전달
+        return new PageImpl<>(schedules, pageable, page.getTotalElements());
+    }
+
 }
