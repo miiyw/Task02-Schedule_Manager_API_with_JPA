@@ -6,7 +6,9 @@ import com.example.task2.entity.ScheduleEntity;
 import com.example.task2.repository.ScheduleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -107,6 +109,20 @@ public class ScheduleService {
 
         // 반환할 Page 객체를 사용해 페이지네이션된 데이터 전달
         return new PageImpl<>(schedules, pageable, page.getTotalElements());
+    }
+
+    /**
+     * 일정 삭제
+     * @param id 삭제할 일정 ID
+     */
+    public void deleteSchedule(Long id) {
+        // 일정이 존재하는지 체크
+        if (!scheduleRepository.existsById(id)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "일정이 존재하지 않습니다.");
+        }
+
+        // 일정 삭제
+        scheduleRepository.deleteById(id);
     }
 
 }

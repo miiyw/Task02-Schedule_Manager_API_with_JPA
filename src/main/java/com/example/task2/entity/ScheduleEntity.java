@@ -31,8 +31,8 @@ public class ScheduleEntity {
     @Column(nullable = false)
     private LocalDateTime updatedAt;  // 수정일
 
-    @OneToMany(mappedBy = "schedule", fetch = FetchType.LAZY)
-    private List<CommentEntity> comments = new ArrayList<>();  // 빈 리스트로 초기화
+    @OneToMany(mappedBy = "schedule", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CommentEntity> comments = new ArrayList<>(); // 일정과 댓글의 1:N 관계
 
     @PrePersist
     public void onPrePersist() {

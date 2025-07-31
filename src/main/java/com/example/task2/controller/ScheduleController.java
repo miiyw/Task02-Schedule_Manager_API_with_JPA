@@ -71,4 +71,15 @@ public class ScheduleController {
 
         return scheduleService.getSchedules(pageNo, pageSize);
     }
+
+    /**
+     * 일정 삭제 API
+     * @param id 삭제할 일정 ID
+     * @return HTTP 204 No Content 응답
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
+        scheduleService.deleteSchedule(id);
+        return ResponseEntity.noContent().build();
+    }
 }
