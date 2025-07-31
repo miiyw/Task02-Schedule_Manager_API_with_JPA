@@ -21,9 +21,10 @@ public class ScheduleResponseDto {
     private LocalDateTime updatedAt;  // 수정일
     private int commentCount;         // 댓글 개수
 
-    private List<AssignedUserDto> assignedUsers;  // 담당 유저 목록
+    // 담당 유저 목록 (단건 조회시에만 포함)
+    private List<AssignedUserDto> assignedUsers;
 
-
+    // 담당 유저 포함 생성자 (단건 조회용)
     public ScheduleResponseDto(
             Long id,
             String userName,
@@ -44,8 +45,27 @@ public class ScheduleResponseDto {
         this.assignedUsers = assignedUsers;
     }
 
-    // Entity를 ResponseDto로 변환하는 메서드
-    public static ScheduleResponseDto fromEntity(ScheduleEntity scheduleEntity) {
+    // 담당 유저 제외 생성자 (전체 조회용)
+    public ScheduleResponseDto(
+            Long id,
+            String userName,
+            String title,
+            String content,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            int commentCount
+    ) {
+        this(id, userName, title, content, createdAt, updatedAt, commentCount, null);
+    }
+
+    // 단건 조회용 fromEntity (담당 유저 포함)
+    public static ScheduleResponseDto fromEntityWithAssignedUsers(ScheduleEntity scheduleEntity) {
+        List<AssignedUserDto> assignedUsers = scheduleEntity.getScheduleUsers() != null ?
+                scheduleEntity.getScheduleUsers().stream()
+                        .map(su -> new AssignedUserDto(su.getUser().getId(), su.getUser().getUserName()))
+                        .collect(Collectors.toList())
+                : null;
+
         return new ScheduleResponseDto(
                 scheduleEntity.getId(),
                 scheduleEntity.getUser() != null ? scheduleEntity.getUser().getUserName() : null,
@@ -54,10 +74,20 @@ public class ScheduleResponseDto {
                 scheduleEntity.getCreatedAt(),
                 scheduleEntity.getUpdatedAt(),
                 scheduleEntity.getComments() != null ? scheduleEntity.getComments().size() : 0,
-                scheduleEntity.getScheduleUsers() != null ?
-                        scheduleEntity.getScheduleUsers().stream()
-                                .map(su -> new AssignedUserDto(su.getUser().getId(), su.getUser().getUserName()))
-                                .collect(Collectors.toList()) : null
+                assignedUsers
+        );
+    }
+
+    // 전체 조회용 fromEntity (담당 유저 제외)
+    public static ScheduleResponseDto fromEntity(ScheduleEntity scheduleEntity) {
+        return new ScheduleResponseDto(
+                scheduleEntity.getId(),
+                scheduleEntity.getUser() != null ? scheduleEntity.getUser().getUserName() : null,
+                scheduleEntity.getTitle(),
+                scheduleEntity.getContent(),
+                scheduleEntity.getCreatedAt(),
+                scheduleEntity.getUpdatedAt(),
+                scheduleEntity.getComments() != null ? scheduleEntity.getComments().size() : 0
         );
     }
 

@@ -63,7 +63,7 @@ public class ScheduleService {
      */
     public Optional<ScheduleResponseDto> getScheduleById(Long id) {
         Optional<ScheduleEntity> scheduleEntity = scheduleRepository.findById(id);
-        return scheduleEntity.map(ScheduleResponseDto::fromEntity);
+        return scheduleEntity.map(ScheduleResponseDto::fromEntityWithAssignedUsers);
     }
 
     /**
@@ -108,24 +108,10 @@ public class ScheduleService {
     public Page<ScheduleResponseDto> getSchedules(int pageNo, int pageSize) {
         Pageable pageable = PageRequest.of(pageNo, pageSize > 0 ? pageSize : 10, Sort.by(Sort.Order.desc("updatedAt")));
 
-        // 일정 목록을 페이지네이션 및 수정일 내림차순으로 조회
         Page<ScheduleEntity> page = scheduleRepository.findAll(pageable);
 
         List<ScheduleResponseDto> schedules = page.getContent().stream()
-                .map(schedule -> new ScheduleResponseDto(
-                        schedule.getId(),
-                        schedule.getUser() != null ? schedule.getUser().getUserName() : null, // 유저명 null 체크
-                        schedule.getTitle(),
-                        schedule.getContent(),
-                        schedule.getCreatedAt(),
-                        schedule.getUpdatedAt(),
-                        schedule.getComments() != null ? schedule.getComments().size() : 0,
-                        schedule.getScheduleUsers() != null ?  // 필드명 scheduleUsers로 변경
-                                schedule.getScheduleUsers().stream()
-                                        .map(su -> new ScheduleResponseDto.AssignedUserDto(su.getUser().getId(), su.getUser().getUserName()))
-                                        .collect(Collectors.toList())
-                                : Collections.emptyList()  // null일 때 빈 리스트 반환
-                ))
+                .map(ScheduleResponseDto::fromEntity)  // 담당 유저 제외 변환 메서드 호출
                 .collect(Collectors.toList());
 
         return new PageImpl<>(schedules, pageable, page.getTotalElements());
