@@ -3,13 +3,18 @@ package com.example.task2.service;
 import com.example.task2.dto.ScheduleRequestDto;
 import com.example.task2.dto.ScheduleResponseDto;
 import com.example.task2.entity.ScheduleEntity;
+import com.example.task2.entity.ScheduleUserEntity;
+import com.example.task2.entity.UserEntity;
 import com.example.task2.repository.ScheduleRepository;
+import com.example.task2.repository.ScheduleUserRepository;
+import com.example.task2.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -18,22 +23,30 @@ import java.util.stream.Collectors;
 public class ScheduleService {
 
     private final ScheduleRepository scheduleRepository;
+    private final UserRepository userRepository;
+    private final ScheduleUserRepository scheduleUserRepository;
 
-    // Spring의 의존성 주입(Dependency Injection)을 사용하여 ScheduleRepository 자동으로 주입
     @Autowired
-    public ScheduleService(ScheduleRepository scheduleRepository) {
-        // 생성자 주입을 통해 scheduleRepository 필드에 전달된 ScheduleRepository 객체 할당
+    public ScheduleService(ScheduleRepository scheduleRepository, UserRepository userRepository, ScheduleUserRepository scheduleUserRepository) {
         this.scheduleRepository = scheduleRepository;
+        this.userRepository = userRepository;
+        this.scheduleUserRepository = scheduleUserRepository;
     }
 
     /**
-     * 새로운 일정을 생성하여 DB에 저장
+     * 일정 생성
      * @param request 일정 생성 요청 DTO
-     * @return 저장된 일정의 응답 DTO
+     * @param userId 일정 작성 유저의 고유 ID
+     * @return 생성된 일정 정보 (응답 DTO)
      */
-    public ScheduleResponseDto saveSchedule(ScheduleRequestDto request) {
+    public ScheduleResponseDto saveSchedule(ScheduleRequestDto request, Long userId) {
+        // 유저 존재 여부 확인
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저가 존재하지 않습니다."));
+
+        // 새 일정 생성
         ScheduleEntity scheduleEntity = new ScheduleEntity();
-        scheduleEntity.setUserName(request.getUserName());
+        scheduleEntity.setUser(user);  // 유저 고유 식별자 설정
         scheduleEntity.setTitle(request.getTitle());
         scheduleEntity.setContent(request.getContent());
 
@@ -63,15 +76,19 @@ public class ScheduleService {
         ScheduleEntity scheduleEntity = scheduleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("일정이 존재하지 않습니다."));
 
-        // 입력된 값이 null이 아닌 경우에만 수정
-        if (request.getUserName() != null) {
-            scheduleEntity.setUserName(request.getUserName()); // userName 수정
+        // 유저 정보 수정 (유저 고유 식별자로 유저를 수정)
+        if (request.getUserId() != null) {
+            UserEntity user = userRepository.findById(request.getUserId())
+                    .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+            scheduleEntity.setUser(user);
         }
+
+        // 제목, 내용 수정
         if (request.getTitle() != null && !request.getTitle().isEmpty()) {
-            scheduleEntity.setTitle(request.getTitle());       // title 수정
+            scheduleEntity.setTitle(request.getTitle());
         }
         if (request.getContent() != null && !request.getContent().isEmpty()) {
-            scheduleEntity.setContent(request.getContent());   // content 수정
+            scheduleEntity.setContent(request.getContent());
         }
 
         // 수정된 일정 저장
@@ -81,6 +98,7 @@ public class ScheduleService {
         return ScheduleResponseDto.fromEntity(scheduleEntity);
     }
 
+
     /**
      * 페이지네이션을 이용한 일정 조회
      * @param pageNo 페이지 번호
@@ -88,26 +106,28 @@ public class ScheduleService {
      * @return 페이지네이션된 일정 목록
      */
     public Page<ScheduleResponseDto> getSchedules(int pageNo, int pageSize) {
-        // Pageable 객체 생성, 기본 페이지 크기는 10
         Pageable pageable = PageRequest.of(pageNo, pageSize > 0 ? pageSize : 10, Sort.by(Sort.Order.desc("updatedAt")));
 
         // 일정 목록을 페이지네이션 및 수정일 내림차순으로 조회
         Page<ScheduleEntity> page = scheduleRepository.findAll(pageable);
 
-        // ScheduleEntity를 ScheduleResponseDto로 변환
         List<ScheduleResponseDto> schedules = page.getContent().stream()
                 .map(schedule -> new ScheduleResponseDto(
                         schedule.getId(),
+                        schedule.getUser() != null ? schedule.getUser().getUserName() : null, // 유저명 null 체크
                         schedule.getTitle(),
                         schedule.getContent(),
-                        schedule.getUserName(),
                         schedule.getCreatedAt(),
                         schedule.getUpdatedAt(),
-                        schedule.getComments().size()  // 댓글 개수
+                        schedule.getComments() != null ? schedule.getComments().size() : 0,
+                        schedule.getScheduleUsers() != null ?  // 필드명 scheduleUsers로 변경
+                                schedule.getScheduleUsers().stream()
+                                        .map(su -> new ScheduleResponseDto.AssignedUserDto(su.getUser().getId(), su.getUser().getUserName()))
+                                        .collect(Collectors.toList())
+                                : Collections.emptyList()  // null일 때 빈 리스트 반환
                 ))
                 .collect(Collectors.toList());
 
-        // 반환할 Page 객체를 사용해 페이지네이션된 데이터 전달
         return new PageImpl<>(schedules, pageable, page.getTotalElements());
     }
 
@@ -116,13 +136,31 @@ public class ScheduleService {
      * @param id 삭제할 일정 ID
      */
     public void deleteSchedule(Long id) {
-        // 일정이 존재하는지 체크
         if (!scheduleRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "일정이 존재하지 않습니다.");
         }
-
-        // 일정 삭제
         scheduleRepository.deleteById(id);
     }
 
+    /**
+     * 일정에 담당 유저 추가
+     * @param scheduleId 일정 ID
+     * @param userId 담당 유저 ID
+     */
+    public ScheduleUserEntity addUserToSchedule(Long scheduleId, Long userId) {
+        // 일정 조회
+        ScheduleEntity schedule = scheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "일정이 존재하지 않습니다."));
+
+        // 유저 조회
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "유저가 존재하지 않습니다."));
+
+        // 중간 테이블에 담당 유저 추가
+        ScheduleUserEntity scheduleUser = new ScheduleUserEntity();
+        scheduleUser.setSchedule(schedule);
+        scheduleUser.setUser(user);
+
+        return scheduleUserRepository.save(scheduleUser);
+    }
 }

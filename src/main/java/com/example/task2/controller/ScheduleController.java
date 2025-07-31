@@ -2,6 +2,7 @@ package com.example.task2.controller;
 
 import com.example.task2.dto.ScheduleRequestDto;
 import com.example.task2.dto.ScheduleResponseDto;
+import com.example.task2.entity.ScheduleUserEntity;
 import com.example.task2.service.ScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -24,11 +25,12 @@ public class ScheduleController {
      * 일정 생성 API
      * POST /schedules
      * @param request 일정 생성 요청 DTO
+     * @param userId 일정 작성 유저의 고유 ID
      * @return 생성된 일정 정보 (응답 DTO)
      */
     @PostMapping
-    public ResponseEntity<ScheduleResponseDto> createSchedule(@RequestBody ScheduleRequestDto request) {
-        ScheduleResponseDto save = scheduleService.saveSchedule(request);
+    public ResponseEntity<ScheduleResponseDto> createSchedule(@RequestBody ScheduleRequestDto request, @RequestParam Long userId) {
+        ScheduleResponseDto save = scheduleService.saveSchedule(request, userId);
         return ResponseEntity.ok(save);
     }
 
@@ -81,5 +83,18 @@ public class ScheduleController {
     public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
         scheduleService.deleteSchedule(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * 일정에 담당 유저 추가
+     * POST /schedules/{scheduleId}/users
+     * @param scheduleId 일정 ID
+     * @param userId 담당 유저 ID
+     * @return 중간 테이블에 저장된 담당 유저 정보
+     */
+    @PostMapping("/{scheduleId}/users")
+    public ResponseEntity<ScheduleUserEntity> addUserToSchedule(@PathVariable Long scheduleId, @RequestParam Long userId) {
+        ScheduleUserEntity savedScheduleUser = scheduleService.addUserToSchedule(scheduleId, userId);
+        return ResponseEntity.ok(savedScheduleUser);
     }
 }
