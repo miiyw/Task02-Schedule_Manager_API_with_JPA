@@ -16,3 +16,15 @@ CREATE TABLE schedules (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 작성일
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  -- 수정일
 );
+
+-- comments 테이블 생성
+CREATE TABLE comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,  -- 댓글 고유 ID
+    content TEXT NOT NULL,              -- 댓글 내용
+    userName VARCHAR(100) NOT NULL,     -- 작성 유저명
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 작성일
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,  -- 수정일
+    scheduleId INT NOT NULL,  -- 일정 ID (foreign key)
+    FOREIGN KEY (scheduleId) REFERENCES schedules(id) ON DELETE CASCADE  -- 일정과 댓글의 연관 관계
+);
+
