@@ -1,6 +1,5 @@
 package com.example.task2.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,6 +23,8 @@ public class UserEntity {
 
     private String userName;    // 유저명
     private String email;       // 이메일
+
+    private String password;    // 비밀번호
 
     @Column(nullable = false)
     private LocalDateTime createdAt;  // 작성일

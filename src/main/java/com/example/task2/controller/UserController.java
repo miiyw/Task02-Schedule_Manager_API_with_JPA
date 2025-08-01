@@ -46,4 +46,12 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
+
+    // 회원 가입
+    @PostMapping("/signup")
+    public ResponseEntity<String> signUp(@RequestBody UserEntity user) {
+        // 회원 가입 처리 후 JWT 반환
+        String jwtToken = userService.signUp(user.getUserName(), user.getEmail(), user.getPassword());
+        return ResponseEntity.ok(jwtToken);  // 발급된 JWT 토큰 반환
+    }
 }
