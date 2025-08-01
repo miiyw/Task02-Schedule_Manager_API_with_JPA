@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // 회원 가입 및 로그인 요청은 필터 제외
+        // 회원가입과 로그인은 필터 제외
         if (path.equals("/users/signup") || path.equals("/users/login")) {
             filterChain.doFilter(request, response);
             return;
@@ -52,7 +52,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         Claims claims = jwtUtil.parseToken(token);
+
+        // 사용자 이메일(=식별값), 권한, ID 추출
         String email = claims.getSubject();
+        String role = claims.get("role", String.class);
+        Integer userId = claims.get("id", Integer.class);  // 프론트에서 Long으로 받으면 Long.class로
+
+        // 인가를 위해 request에 추가 저장
+        request.setAttribute("userRole", role);
+        request.setAttribute("userId", userId);
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(email, null, Collections.emptyList());

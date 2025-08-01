@@ -1,5 +1,6 @@
 package com.example.task2.service;
 
+import com.example.task2.config.UserRole;
 import com.example.task2.entity.UserEntity;
 import com.example.task2.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,7 +45,7 @@ public class UserService {
     }
 
     // 회원 가입
-    public String signUp(String userName, String email, String rawPassword) {
+    public String signUp(String userName, String email, String rawPassword, UserRole role) {
         // 이메일 중복 검사
         if (userRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("이미 등록된 이메일입니다.");
@@ -58,10 +59,12 @@ public class UserService {
         user.setUserName(userName);
         user.setEmail(email);
         user.setPassword(encodedPassword);
+        user.setRole(role);
+
         userRepository.save(user);
 
         // JWT 발급
-        return jwtUtil.generateToken(user);
+        return jwtUtil.createToken(user);
     }
 
     // 사용자 인증

@@ -4,10 +4,12 @@ import com.example.task2.dto.ScheduleRequestDto;
 import com.example.task2.dto.ScheduleResponseDto;
 import com.example.task2.entity.ScheduleUserEntity;
 import com.example.task2.service.ScheduleService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.AccessDeniedException;
 
 @RestController                    // 해당 클래스가 REST API의 컨트롤러임을 명시 (응답을 JSON으로 처리)
 @RequestMapping("/schedules")   // 이 컨트롤러의 모든 요청은 "/schedules"로
@@ -47,18 +49,18 @@ public class ScheduleController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * 일정 수정 API
-     * PUT /schedules/{id}
-     * @param id 수정할 일정 ID
-     * @param request 수정할 내용이 담긴 요청 DTO
-     * @return 수정된 일정 정보 (응답 DTO)
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<ScheduleResponseDto> updateSchedule(@PathVariable Long id, @RequestBody ScheduleRequestDto request) {
-        ScheduleResponseDto updatedSchedule = scheduleService.updateSchedule(id, request);
-        return ResponseEntity.ok(updatedSchedule);
-    }
+//    /**
+//     * 일정 수정 API
+//     * PUT /schedules/{id}
+//     * @param id 수정할 일정 ID
+//     * @param request 수정할 내용이 담긴 요청 DTO
+//     * @return 수정된 일정 정보 (응답 DTO)
+//     */
+//    @PutMapping("/{id}")
+//    public ResponseEntity<ScheduleResponseDto> updateSchedule(@PathVariable Long id, @RequestBody ScheduleRequestDto request) {
+//        ScheduleResponseDto updatedSchedule = scheduleService.updateSchedule(id, request);
+//        return ResponseEntity.ok(updatedSchedule);
+//    }
 
     /**
      * 페이지네이션을 사용하여 일정 목록을 조회
@@ -74,16 +76,16 @@ public class ScheduleController {
         return scheduleService.getSchedules(pageNo, pageSize);
     }
 
-    /**
-     * 일정 삭제 API
-     * @param id 삭제할 일정 ID
-     * @return HTTP 204 No Content 응답
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
-        scheduleService.deleteSchedule(id);
-        return ResponseEntity.noContent().build();
-    }
+//    /**
+//     * 일정 삭제 API
+//     * @param id 삭제할 일정 ID
+//     * @return HTTP 204 No Content 응답
+//     */
+//    @DeleteMapping("/{id}")
+//    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
+//        scheduleService.deleteSchedule(id);
+//        return ResponseEntity.noContent().build();
+//    }
 
     /**
      * 일정에 담당 유저 추가
@@ -96,5 +98,45 @@ public class ScheduleController {
     public ResponseEntity<ScheduleUserEntity> addUserToSchedule(@PathVariable Long scheduleId, @RequestParam Long userId) {
         ScheduleUserEntity savedScheduleUser = scheduleService.addUserToSchedule(scheduleId, userId);
         return ResponseEntity.ok(savedScheduleUser);
+    }
+
+    /**
+     * 일정 수정 API (⚠관리자 권한 필요)
+     * PUT /schedules/{id}
+     * @param id 수정할 일정 ID
+     * @param request 수정 내용
+     * @param httpRequest JWT에서 꺼낸 userRole을 포함
+     * @return 수정된 일정 정보
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<ScheduleResponseDto> updateSchedule(@PathVariable Long id,
+                                                              @RequestBody ScheduleRequestDto request,
+                                                              HttpServletRequest httpRequest) {
+        String role = (String) httpRequest.getAttribute("userRole");
+        if (!"ADMIN".equals(role)) {
+            throw new AccessDeniedException("관리자만 수정할 수 있습니다.");
+        }
+
+        ScheduleResponseDto updatedSchedule = scheduleService.updateSchedule(id, request);
+        return ResponseEntity.ok(updatedSchedule);
+    }
+
+    /**
+     * 일정 삭제 API (⚠관리자 권한 필요)
+     * DELETE /schedules/{id}
+     * @param id 삭제할 일정 ID
+     * @param httpRequest JWT에서 꺼낸 userRole을 포함
+     * @return HTTP 204 No Content
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id,
+                                               HttpServletRequest httpRequest) {
+        String role = (String) httpRequest.getAttribute("userRole");
+        if (!"ADMIN".equals(role)) {
+            throw new AccessDeniedException("관리자만 삭제할 수 있습니다.");
+        }
+
+        scheduleService.deleteSchedule(id);
+        return ResponseEntity.noContent().build();
     }
 }

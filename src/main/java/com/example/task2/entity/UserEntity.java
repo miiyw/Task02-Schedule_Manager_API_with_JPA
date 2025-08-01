@@ -1,5 +1,6 @@
 package com.example.task2.entity;
 
+import com.example.task2.config.UserRole;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -31,6 +32,9 @@ public class UserEntity {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;  // 수정일
+
+    @Enumerated(EnumType.STRING)
+    private UserRole role; // 추가된 필드
 
     // 일정에 할당된 유저들
     @OneToMany(mappedBy = "user")

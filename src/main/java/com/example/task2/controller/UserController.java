@@ -64,7 +64,8 @@ public class UserController {
             String token = userService.signUp(
                     signupRequest.getUserName(),
                     signupRequest.getEmail(),
-                    signupRequest.getPassword()
+                    signupRequest.getPassword(),
+                    signupRequest.getRole()
             );
 
             Map<String, Object> response = new LinkedHashMap<>();
@@ -110,7 +111,8 @@ public class UserController {
         }
 
         // 성공 시
-        String token = jwtUtil.generateToken(user);
+        //String token = jwtUtil.generateToken(user);
+        String token = jwtUtil.createToken(user);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)

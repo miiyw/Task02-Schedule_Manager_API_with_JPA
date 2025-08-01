@@ -7,6 +7,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.AccessDeniedException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +42,12 @@ public class GlobalExceptionHandler {
         errorResponse.put("statusCode", 400);
         errorResponse.put("msg", ex.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<?> handleAccessDenied(AccessDeniedException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("msg", e.getMessage(), "statusCode", 403));
     }
 }
 
