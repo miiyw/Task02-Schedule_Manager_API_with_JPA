@@ -31,51 +31,53 @@
 
 ---
 
-## 🗂 프로젝트 구조
-```arduino
-📦 com.example.task2
-├── 📂 config
-│   ├── GlobalExceptionHandler.java       // 전역 예외 처리
-│   ├── JwtAuthenticationFilter.java      // JWT 인증 필터
-│   ├── PasswordEncoderConfig.java        // 비밀번호 암호화 설정
-│   ├── RestTemplateConfig.java           // 외부 API 호출용 RestTemplate 설정
-│   ├── SecurityConfig.java               // Spring Security 설정 (JWT 기반)
-│   └── UserRole.java                     // 유저 권한 ENUM (ADMIN, USER)
-│
-├── 📂 controller
-│   ├── CommentController.java            // 댓글 관련 API
-│   ├── ScheduleController.java           // 일정 관련 API
-│   └── UserController.java               // 회원 관련 API
-│
-├── 📂 dto
-│   ├── CommentRequestDto.java
-│   ├── CommentResponseDto.java
-│   ├── LoginRequestDto.java
-│   ├── ScheduleRequestDto.java
-│   ├── ScheduleResponseDto.java
-│   ├── SignupRequestDto.java
-│   └── WeatherResponseDto.java
-│
-├── 📂 entity
-│   ├── CommentEntity.java
-│   ├── ScheduleEntity.java
-│   ├── ScheduleUserEntity.java           // 일정-유저 관계 (N:M)
-│   └── UserEntity.java
-│
-├── 📂 repository
-│   ├── CommentRepository.java
-│   ├── ScheduleRepository.java
-│   ├── ScheduleUserRepository.java
-│   └── UserRepository.java
-│
-├── 📂 service
-│   ├── CommentService.java
-│   ├── JWTUtil.java                      // JWT 생성 및 검증 유틸
-│   ├── ScheduleService.java
-│   ├── UserService.java
-│   └── WeatherService.java               // 외부 날씨 API 연동
-│
-└── Task2Application.java                 // 메인 클래스
+## 🗂 Task2 서비스 아키텍처
+```yaml
+      [ Client (프론트엔드) ]
+                |
+                ▼
+      ┌────────────────────┐
+      │  Controller Layer  │
+      └────────────────────┘
+      ┌────────────────────────────────────────────────────┐
+      │ UserController       - 회원 가입/로그인             │
+      │ ScheduleController   - 일정 생성/조회               │
+      │ CommentController    - 댓글 등록/조회               │
+      └────────────────────────────────────────────────────┘
+                |
+                ▼
+      ┌────────────────────┐
+      │   Service Layer    │
+      └────────────────────┘
+      ┌──────────────────────────────────────────────────────────────────────┐
+      │ UserService        - 회원 로직 (비밀번호 암호화, 회원 등록 등)          │
+      │ ScheduleService    - 일정 등록/수정/삭제                              │
+      │ CommentService     - 댓글 등록/삭제                                   │
+      │ WeatherService     - 외부 날씨 API 연동                               │
+      │ JWTUtil            - JWT 토큰 생성 및 검증                            │
+      └──────────────────────────────────────────────────────────────────────┘
+                |
+                ▼
+      ┌────────────────────┐
+      │  Repository Layer  │
+      └────────────────────┘
+      ┌────────────────────────────────────────────────────────────┐
+      │ UserRepository         - 유저 DB 처리                       │
+      │ ScheduleRepository     - 일정 DB 처리                       │
+      │ CommentRepository      - 댓글 DB 처리                       │
+      │ ScheduleUserRepository - 일정-유저 관계 처리                 │
+      └────────────────────────────────────────────────────────────┘
+                |
+                ▼
+      ┌────────────────────┐
+      │    Entity Layer    │
+      └────────────────────┘
+      ┌────────────────────────────────────────────────────────────┐
+      │ UserEntity           - 유저 엔티티                          │
+      │ ScheduleEntity       - 일정 엔티티                          │
+      │ CommentEntity        - 댓글 엔티티                          │
+      │ ScheduleUserEntity   - N:M 관계 엔티티                      │
+      └────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -129,47 +131,10 @@
 
 ✅ `schedule_id`와 `user_id`는 각각 `schedules`, `users` 테이블과 외래 키로 연결되며, <br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;**일정 또는 유저 삭제 시** 매핑도 함께 삭제됨 (`ON DELETE CASCADE`)
-
----
-
-### 💾 ERD 코드 (`dbdiagram.io`)
-```sql
-Table users {
-  id         BIGINT [pk, increment]          // 고유 ID
-  name       VARCHAR(100) [not null]         // 이름
-  email      VARCHAR(100) [not null, unique] // 이메일
-  created_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-  updated_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-}
-
-Table schedules {
-  id         BIGINT [pk, increment]   // 일정 고유 ID
-  user_name  VARCHAR(100) [not null]  // 작성 유저명
-  title      VARCHAR(200) [not null]  // 일정 제목
-  content    TEXT                     // 일정 내용
-  weather    VARCHAR(50)              // 날씨 정보
-  created_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-  updated_at TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-}
-
-Table comments {
-  id         BIGINT [pk, increment]  // 댓글 고유 ID
-  content    TEXT [not null]         // 댓글 내용
-  userName   VARCHAR(100) [not null] // 작성 유저명
-  createdAt  TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-  updatedAt  TIMESTAMP [default: `CURRENT_TIMESTAMP`]
-  scheduleId BIGINT [not null, ref: > schedules.id] // ON DELETE CASCADE
-}
-
-Table schedule_user {
-  id          BIGINT [pk, increment]                 // 관계 고유 ID
-  schedule_id BIGINT [not null, ref: > schedules.id] // ON DELETE CASCADE
-  user_id     BIGINT [not null, ref: > users.id]     // ON DELETE CASCADE
-}
-```
+<br>
 
 ### 🖼 ERD 시각화
-<img width="1492" height="1024" alt="Image" src="https://github.com/user-attachments/assets/58905493-6cda-48ad-acef-a726f4366425" />
+![ERD_JPA](ERD_JPA.png)
 
 ---
 
