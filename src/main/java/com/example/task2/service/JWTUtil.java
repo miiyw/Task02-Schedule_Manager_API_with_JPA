@@ -1,8 +1,7 @@
 package com.example.task2.service;
 
 import com.example.task2.entity.UserEntity;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
@@ -23,5 +22,31 @@ public class JWTUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1일 만료
                 .signWith(SECRET_KEY)         // 자동으로 적절한 비밀 키를 사용하여 서명
                 .compact();                   // JWT 생성
+    }
+
+    // JWT 토큰 검증 (Claims를 반환)
+    public Claims parseToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(SECRET_KEY)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    // 유효성 검증(예외 처리 포함)
+    public boolean validateToken(String token) {
+        try {
+            parseToken(token);
+            return true;
+        } catch (ExpiredJwtException e) {
+            System.out.println("만료된 토큰입니다.");
+        } catch (UnsupportedJwtException e) {
+            System.out.println("지원하지 않는 토큰입니다.");
+        } catch (MalformedJwtException e) {
+            System.out.println("토큰 형식이 잘못되었습니다.");
+        } catch (Exception e) {
+            System.out.println("토큰 검증 실패: " + e.getMessage());
+        }
+        return false;
     }
 }

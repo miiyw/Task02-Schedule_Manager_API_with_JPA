@@ -1,22 +1,32 @@
 package com.example.task2.controller;
 
+import com.example.task2.dto.LoginRequestDto;
+import com.example.task2.dto.SignupRequestDto;
 import com.example.task2.entity.UserEntity;
+import com.example.task2.service.JWTUtil;
 import com.example.task2.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.*;
 
 @RestController
 @RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
+    private final JWTUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserController(UserService userService) {
+    public UserController(UserService userService, JWTUtil jwtUtil, PasswordEncoder passwordEncoder) {
         this.userService = userService;
+        this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
 
     // 유저 저장
@@ -49,9 +59,64 @@ public class UserController {
 
     // 회원 가입
     @PostMapping("/signup")
-    public ResponseEntity<String> signUp(@RequestBody UserEntity user) {
-        // 회원 가입 처리 후 JWT 반환
-        String jwtToken = userService.signUp(user.getUserName(), user.getEmail(), user.getPassword());
-        return ResponseEntity.ok(jwtToken);  // 발급된 JWT 토큰 반환
+    public ResponseEntity<Map<String, Object>> signUp(@RequestBody SignupRequestDto signupRequest) {
+        try {
+            String token = userService.signUp(
+                    signupRequest.getUserName(),
+                    signupRequest.getEmail(),
+                    signupRequest.getPassword()
+            );
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("msg", "회원 가입 성공");
+            response.put("statusCode", 200);
+            response.put("token", token);
+
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> errorResponse = new LinkedHashMap<>();
+            errorResponse.put("statusCode", 400);
+            errorResponse.put("msg", e.getMessage());
+
+            return ResponseEntity.status(400).body(errorResponse);
+        }
+    }
+
+    // 로그인
+    @PostMapping("/login")
+    public ResponseEntity<Object> login(@RequestBody @Valid LoginRequestDto loginRequest) {
+        String email = loginRequest.getEmail();
+        String password = loginRequest.getPassword();
+
+        // 이메일로 유저 먼저 조회
+        Optional<UserEntity> userOpt = userService.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "msg", "존재하지 않는 이메일입니다.",
+                    "statusCode", 401
+            ));
+        }
+
+        UserEntity user = userOpt.get();
+
+        // 비밀번호 일치 확인
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            return ResponseEntity.status(401).body(Map.of(
+                    "msg", "비밀번호가 일치하지 않습니다.",
+                    "statusCode", 401
+            ));
+        }
+
+        // 성공 시
+        String token = jwtUtil.generateToken(user);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .body(Map.of(
+                        "msg", "로그인 성공",
+                        "statusCode", 200
+                ));
     }
 }
