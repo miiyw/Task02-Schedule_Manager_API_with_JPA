@@ -13,13 +13,14 @@ import java.util.stream.Collectors;
 @Setter
 public class ScheduleResponseDto {
 
-    private Long id;                  // 일정 고유 ID
-    private String userName;          // 작성 유저명
-    private String title;             // 할 일 제목
-    private String content;           // 할 일 내용
-    private LocalDateTime createdAt;  // 작성일
-    private LocalDateTime updatedAt;  // 수정일
-    private int commentCount;         // 댓글 개수
+    private Long id;                    // 일정 고유 ID
+    private String userName;            // 작성 유저명
+    private String title;               // 할 일 제목
+    private String content;             // 할 일 내용
+    private String weather;             // 날씨 정보
+    private LocalDateTime createdAt;    // 작성일
+    private LocalDateTime updatedAt;    // 수정일
+    private int commentCount;           // 댓글 개수
 
     // 담당 유저 목록 (단건 조회시에만 포함)
     private List<AssignedUserDto> assignedUsers;
@@ -30,6 +31,7 @@ public class ScheduleResponseDto {
             String userName,
             String title,
             String content,
+            String weather,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             int commentCount,
@@ -39,6 +41,7 @@ public class ScheduleResponseDto {
         this.userName = userName;
         this.title = title;
         this.content = content;
+        this.weather = weather;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
         this.commentCount = commentCount;
@@ -51,11 +54,12 @@ public class ScheduleResponseDto {
             String userName,
             String title,
             String content,
+            String weather,
             LocalDateTime createdAt,
             LocalDateTime updatedAt,
             int commentCount
     ) {
-        this(id, userName, title, content, createdAt, updatedAt, commentCount, null);
+        this(id, userName, title, content, weather, createdAt, updatedAt, commentCount, null);
     }
 
     // 단건 조회용 fromEntity (담당 유저 포함)
@@ -71,6 +75,7 @@ public class ScheduleResponseDto {
                 scheduleEntity.getUser() != null ? scheduleEntity.getUser().getUserName() : null,
                 scheduleEntity.getTitle(),
                 scheduleEntity.getContent(),
+                scheduleEntity.getWeather(),
                 scheduleEntity.getCreatedAt(),
                 scheduleEntity.getUpdatedAt(),
                 scheduleEntity.getComments() != null ? scheduleEntity.getComments().size() : 0,
@@ -85,6 +90,7 @@ public class ScheduleResponseDto {
                 scheduleEntity.getUser() != null ? scheduleEntity.getUser().getUserName() : null,
                 scheduleEntity.getTitle(),
                 scheduleEntity.getContent(),
+                scheduleEntity.getWeather(),
                 scheduleEntity.getCreatedAt(),
                 scheduleEntity.getUpdatedAt(),
                 scheduleEntity.getComments() != null ? scheduleEntity.getComments().size() : 0

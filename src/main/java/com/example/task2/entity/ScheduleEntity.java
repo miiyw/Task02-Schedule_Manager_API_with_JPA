@@ -23,9 +23,11 @@ public class ScheduleEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // 일정 고유 ID
 
-    //private String userName;    // 작성 유저명
+    //private String userName;   // 작성 유저명
     private String title;       // 할 일 제목
     private String content;     // 할 일 내용
+
+    private String weather;     // 날씨 정보
 
     @Column(nullable = false)
     private LocalDateTime createdAt;  // 작성일

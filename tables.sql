@@ -13,6 +13,7 @@ CREATE TABLE schedules (
     user_name VARCHAR(100) NOT NULL,    -- 작성 유저명
     title VARCHAR(200) NOT NULL,        -- 할 일 제목
     content TEXT,                       -- 할 일 내용
+    weather VARCHAR(50),                -- 날씨 정보
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- 작성일
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP  -- 수정일
 );

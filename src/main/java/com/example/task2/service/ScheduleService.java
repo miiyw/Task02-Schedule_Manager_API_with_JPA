@@ -25,12 +25,14 @@ public class ScheduleService {
     private final ScheduleRepository scheduleRepository;
     private final UserRepository userRepository;
     private final ScheduleUserRepository scheduleUserRepository;
+    private final WeatherService weatherService;
 
     @Autowired
-    public ScheduleService(ScheduleRepository scheduleRepository, UserRepository userRepository, ScheduleUserRepository scheduleUserRepository) {
+    public ScheduleService(ScheduleRepository scheduleRepository, UserRepository userRepository, ScheduleUserRepository scheduleUserRepository, WeatherService weatherService) {
         this.scheduleRepository = scheduleRepository;
         this.userRepository = userRepository;
         this.scheduleUserRepository = scheduleUserRepository;
+        this.weatherService = weatherService;
     }
 
     /**
@@ -49,6 +51,10 @@ public class ScheduleService {
         scheduleEntity.setUser(user);  // 유저 고유 식별자 설정
         scheduleEntity.setTitle(request.getTitle());
         scheduleEntity.setContent(request.getContent());
+
+        // 날씨 설정
+        String todayWeather = weatherService.getTodayWeather();
+        scheduleEntity.setWeather(todayWeather);
 
         // DB에 저장
         scheduleEntity = scheduleRepository.save(scheduleEntity);
